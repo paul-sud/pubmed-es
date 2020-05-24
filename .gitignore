@@ -1,0 +1,5 @@
+.python-version
+venv
+.mypy_cache/
+.tox/
+__pycache__
