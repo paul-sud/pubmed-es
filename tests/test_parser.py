@@ -8,6 +8,7 @@ import pytest
 from pubmed_es.parser import (
     get_documents_from_pubmed_xml,
     ordered_dict_to_dict,
+    pubmed_date_to_str,
     pythonify_key,
     selectively_flatten_dict,
 )
@@ -16,6 +17,11 @@ article = """
 <PubmedArticleSet>
   <PubmedArticle>
     <MedlineCitation Status="MEDLINE" Owner="NLM">
+      <DateCompleted>
+        <Year>1975</Year>
+        <Month>09</Month>
+        <Day>01</Day>
+      </DateCompleted>
       <Article PubModel="Print">
         <Journal>
           <Title>Arzneimittel-Forschung</Title>
@@ -72,17 +78,17 @@ def test_get_documents_from_pubmed_xml(mocker):
         pubmed_articles[0]["abstract_text"]
         == "(--)-alpha-Bisabolol has a primary antipeptic action"
     )
-    assert pubmed_articles[0]["mesh_heading_list"] == [
+    assert pubmed_articles[0]["mesh_headings"] == [
         {
-            "major_topic_y_n": "N",
+            "major_topic": False,
             "text": "Dose-Response Relationship, Drug",
-            "u_i": "D004305",
+            "ui": "D004305",
         }
     ]
-    assert pubmed_articles[0]["chemical_list"] == [
-        {"text": "Hemoglobins", "u_i": "D006454"}
-    ]
-    assert pubmed_articles[0]["pubmed_pub_date"] == "1975-9-1"
+    assert pubmed_articles[0]["chemicals"] == [{"text": "Hemoglobins", "ui": "D006454"}]
+    assert pubmed_articles[0]["date_completed"] == "1975-09-01"
+    assert "history" not in pubmed_articles[0]
+    assert "pubmed_article" not in pubmed_articles[0]
 
 
 def test_ordered_dict_to_dict():
@@ -97,12 +103,27 @@ def test_selectively_flatten_dict():
         "foo": {"Bar": "baz"},
         "qux": [1, 2, 3],
         "#spam": [{"eggs": {"quux": "corge"}}],
+        "grault": "1",
+        "date": {"Year": "1999", "Month": "03", "Day": "05"},
     }
-    result = selectively_flatten_dict(data)
-    assert result == {"bar": "baz", "qux": [1, 2, 3], "spam": [{"quux": "corge"}]}
+    result = selectively_flatten_dict(
+        data, date_fields=("date",), ignore_keys=("grault",)
+    )
+    assert result == {
+        "bar": "baz",
+        "quxs": [1, 2, 3],
+        "spams": [{"quux": "corge"}],
+        "date": "1999-03-05",
+    }
 
 
 @pytest.mark.parametrize("key,expected", [("@foo", "foo"), ("BazQux", "baz_qux")])
-def test_pythonify_key(key, expected):
+def test_pythonify_key(key: str, expected: str):
     result = pythonify_key(key)
     assert result == expected
+
+
+def test_pubmed_date_to_str():
+    data = {"Year": "1972", "Month": "03", "Day": "20"}
+    result = pubmed_date_to_str(data)
+    assert result == "1972-03-20"
