@@ -9,12 +9,13 @@ import xmltodict
 
 def get_documents_from_pubmed_xmls(
     document_paths: List[Path]
-) -> Iterator[List[Dict[str, Any]]]:
+) -> Iterator[Dict[str, Any]]:
     """
-    Implemented as iterator for low memory overhead
+    Implemented as iterator for low memory overhead. Yields individual pubmed documents
     """
     for document_path in document_paths:
-        yield get_documents_from_pubmed_xml(document_path)
+        for document in get_documents_from_pubmed_xml(document_path):
+            yield document
 
 
 def get_documents_from_pubmed_xml(pubmed_xml: Path) -> List[Dict[str, Any]]:
