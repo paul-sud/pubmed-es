@@ -1,3 +1,4 @@
+from collections import deque
 from typing import List, Optional
 
 from elasticsearch import Elasticsearch
@@ -19,5 +20,7 @@ class ElasticsearchClient:
         """
         See https://elasticsearch-py.readthedocs.io/en/master/helpers.html#elasticsearch.helpers.parallel_bulk
         for details, this is just a wrapper method to unify the helper method and client.
+
+        `parallel_bulk` returns a generator, need to `deque` it to consume.
         """
-        _parallel_bulk(self.client, *args, **kwargs)
+        deque(_parallel_bulk(self.client, *args, **kwargs), maxlen=0)
