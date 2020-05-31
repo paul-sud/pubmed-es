@@ -9,7 +9,7 @@ def test_es_client_parallel_bulk(elasticsearch_server):
     ec.client.indices.create("foo")
 
     def gendata():
-        mywords = ['foo', 'bar']
+        mywords = ["foo", "bar"]
         for i, word in enumerate(mywords):
             yield {
                 "_index": "foo",

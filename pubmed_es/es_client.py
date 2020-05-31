@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import parallel_bulk as _parallel_bulk
