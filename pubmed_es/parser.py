@@ -1,5 +1,6 @@
 import json
 from collections import OrderedDict
+from datetime import date
 from gzip import GzipFile
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Tuple
@@ -7,13 +8,11 @@ from typing import Any, Dict, Iterator, List, Tuple
 import xmltodict
 
 
-def get_documents_from_pubmed_xmls(
-    document_paths: List[Path]
-) -> Iterator[Dict[str, Any]]:
+def get_documents_from_pubmed_xmls(data_dir: Path) -> Iterator[Dict[str, Any]]:
     """
     Implemented as iterator for low memory overhead. Yields individual pubmed documents
     """
-    for document_path in document_paths:
+    for document_path in data_dir.glob("*.xml"):
         for document in get_documents_from_pubmed_xml(document_path):
             yield document
 
@@ -114,7 +113,7 @@ def pythonify_key(key: str, pluralize: bool = False, strip_yn=False) -> str:
 
 
 def pubmed_date_to_str(data: Dict[str, str]) -> str:
-    return "-".join([data["Year"], data["Month"], data["Day"]])
+    return date(int(data["Year"]), int(data["Month"]), int(data["Day"])).isoformat()
 
 
 def yn_to_bool(yn: str) -> bool:
