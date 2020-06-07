@@ -27,6 +27,7 @@ def get_documents_from_pubmed_xml(pubmed_xml: Path) -> List[Dict[str, Any]]:
     docs = []
     date_fields = ("DateCompleted", "DateRevised")
     ignore_keys = ("History",)
+    force_list = ("MeshHeading", "Chemical", "Author")
 
     # too lazy to figure out what types these are supposed to be from xmltodict source
     def item_callback(path, item):  # type: ignore
@@ -37,7 +38,7 @@ def get_documents_from_pubmed_xml(pubmed_xml: Path) -> List[Dict[str, Any]]:
 
     xmltodict.parse(
         GzipFile(pubmed_xml),
-        force_list=("MeshHeading", "Chemical"),
+        force_list=force_list,
         item_depth=2,
         item_callback=item_callback,
     )
