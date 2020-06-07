@@ -7,7 +7,6 @@ import pytest
 from pubmed_es.parser import (
     get_documents_from_pubmed_xml,
     get_documents_from_pubmed_xmls,
-    ordered_dict_to_dict,
     pubmed_date_to_str,
     pythonify_key,
     selectively_flatten_dict,
@@ -46,21 +45,14 @@ def test_get_documents_from_pubmed_xmls(mocker):
     assert next(pubmed_articles) == {"baz": "qux"}
 
 
-def test_ordered_dict_to_dict():
-    ordered = OrderedDict()
-    ordered.update({"1": 2, "3": OrderedDict({"foo": "bar"})})
-    result = ordered_dict_to_dict(ordered)
-    assert result == {"1": 2, "3": {"foo": "bar"}}
-
-
 def test_selectively_flatten_dict():
-    data = {
-        "foo": {"Bar": "baz"},
+    data = OrderedDict({
+        "foo": OrderedDict({"Bar": "baz"}),
         "qux": [1, 2, 3],
-        "#spam": [{"eggs": {"quux": "corge"}}],
+        "#spam": [OrderedDict({"eggs": OrderedDict({"quux": "corge"})})],
         "grault": "1",
-        "date": {"Year": "1999", "Month": "03", "Day": "05"},
-    }
+        "date": OrderedDict({"Year": "1999", "Month": "03", "Day": "05"}),
+    })
     result = selectively_flatten_dict(
         data, date_fields=("date",), ignore_keys=("grault",)
     )

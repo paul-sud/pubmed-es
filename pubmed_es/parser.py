@@ -1,4 +1,4 @@
-import json
+from __future__ import annotations
 from collections import OrderedDict
 from datetime import date
 from gzip import GzipFile
@@ -24,8 +24,7 @@ def get_documents_from_pubmed_xml(pubmed_xml: Path) -> List[Dict[str, Any]]:
 
     # too lazy to figure out what types these are supposed to be from xmltodict source
     def item_callback(path, item):  # type: ignore
-        unordered_item = ordered_dict_to_dict(item)
-        flattened = selectively_flatten_dict(unordered_item, date_fields, ignore_keys)
+        flattened = selectively_flatten_dict(item, date_fields, ignore_keys)
         docs.append(flattened)
         return True
 
@@ -39,12 +38,8 @@ def get_documents_from_pubmed_xml(pubmed_xml: Path) -> List[Dict[str, Any]]:
     return docs
 
 
-def ordered_dict_to_dict(data: OrderedDict) -> Dict[str, Any]:
-    return json.loads(json.dumps(data))
-
-
 def _selectively_flatten_dict(
-    data: Dict[str, Any], date_fields: Tuple[str, ...], ignore_keys: Tuple[str, ...]
+    data: OrderedDict[str, Any], date_fields: Tuple[str, ...], ignore_keys: Tuple[str, ...]
 ) -> Iterator[Tuple[str, Any]]:
     for k, v in data.items():
         if k in ignore_keys:
@@ -52,7 +47,7 @@ def _selectively_flatten_dict(
         # elif k == "@MajorTopicYN":
         elif k.endswith("YN"):
             yield pythonify_key(k, strip_yn=True), yn_to_bool(v)
-        elif isinstance(v, dict):
+        elif isinstance(v, OrderedDict):
             if k in date_fields:
                 yield pythonify_key(k), pubmed_date_to_str(v)
             else:
@@ -60,7 +55,7 @@ def _selectively_flatten_dict(
         elif isinstance(v, list):
             new_val = []
             for item in v:
-                if isinstance(item, dict):
+                if isinstance(item, OrderedDict):
                     new_val.append(
                         {
                             k: v
@@ -77,7 +72,7 @@ def _selectively_flatten_dict(
 
 
 def selectively_flatten_dict(
-    data: Dict[str, Any], date_fields: Tuple[str], ignore_keys: Tuple[str]
+    data: OrderedDict[str, Any], date_fields: Tuple[str], ignore_keys: Tuple[str]
 ) -> Dict[str, Any]:
     return {k: v for k, v in _selectively_flatten_dict(data, date_fields, ignore_keys)}
 
