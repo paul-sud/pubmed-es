@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from collections import OrderedDict
 from datetime import date
 from gzip import GzipFile
@@ -18,6 +19,11 @@ def get_documents_from_pubmed_xmls(data_dir: Path) -> Iterator[Dict[str, Any]]:
 
 
 def get_documents_from_pubmed_xml(pubmed_xml: Path) -> List[Dict[str, Any]]:
+    """
+    Takes a `pathlib.Path` pointing to a gzipped pubmed XML file and returns a list of
+    processed documents. The articles are recursively flattened and ready for indexing
+    into Elasticsearch, with the `_id` set to the article's PMID.
+    """
     docs = []
     date_fields = ("DateCompleted", "DateRevised")
     ignore_keys = ("History",)
@@ -25,6 +31,7 @@ def get_documents_from_pubmed_xml(pubmed_xml: Path) -> List[Dict[str, Any]]:
     # too lazy to figure out what types these are supposed to be from xmltodict source
     def item_callback(path, item):  # type: ignore
         flattened = selectively_flatten_dict(item, date_fields, ignore_keys)
+        flattened["_id"] = flattened["pmid"]
         docs.append(flattened)
         return True
 
@@ -39,14 +46,17 @@ def get_documents_from_pubmed_xml(pubmed_xml: Path) -> List[Dict[str, Any]]:
 
 
 def _selectively_flatten_dict(
-    data: OrderedDict[str, Any], date_fields: Tuple[str, ...], ignore_keys: Tuple[str, ...]
+    data: OrderedDict[str, Any],
+    date_fields: Tuple[str, ...],
+    ignore_keys: Tuple[str, ...],
 ) -> Iterator[Tuple[str, Any]]:
     for k, v in data.items():
         if k in ignore_keys:
             continue
-        # elif k == "@MajorTopicYN":
         elif k.endswith("YN"):
             yield pythonify_key(k, strip_yn=True), yn_to_bool(v)
+        elif k == "PMID":
+            yield pythonify_key(k), v["#text"]
         elif isinstance(v, OrderedDict):
             if k in date_fields:
                 yield pythonify_key(k), pubmed_date_to_str(v)
@@ -74,6 +84,20 @@ def _selectively_flatten_dict(
 def selectively_flatten_dict(
     data: OrderedDict[str, Any], date_fields: Tuple[str], ignore_keys: Tuple[str]
 ) -> Dict[str, Any]:
+    """
+    Does the work to recusively traverse the XML and yield (key, value) pairs when
+    appropriate. Certain keys need special handling. `date_fields` indicates keys with
+    dict values that should be converted into a single ISO format date string.
+    `ignore_keys` indicates keys that should be entirely ignored during parsing and
+    are not recursed either.
+
+    Key value pairs like `"@MajorTopicYN": "Y"` are converted into booleans e.g.
+    `"major_topic": true`.
+
+    PMID is special cased, in XML it looks like `<PMID @Version=1>1</PMID>` which upon
+    deserializing becomes `OrderedDict([('@Version', '1'), ('#text', '1')])`, and here
+    is converted to a simple `"pmid": "1"`.
+    """
     return {k: v for k, v in _selectively_flatten_dict(data, date_fields, ignore_keys)}
 
 
@@ -107,7 +131,7 @@ def pythonify_key(key: str, pluralize: bool = False, strip_yn=False) -> str:
     return new_key
 
 
-def pubmed_date_to_str(data: Dict[str, str]) -> str:
+def pubmed_date_to_str(data: OrderedDict[str, str]) -> str:
     return date(int(data["Year"]), int(data["Month"]), int(data["Day"])).isoformat()
 
 

@@ -17,21 +17,23 @@ def test_get_documents_from_pubmed_xml(mocker, articles):
     mocker.patch("builtins.open", mock_open(read_data=articles))
     pubmed_articles = get_documents_from_pubmed_xml(Path("foo"))
     assert len(pubmed_articles) == 1
+    article = pubmed_articles[0]
     assert (
-        pubmed_articles[0]["abstract_text"]
+        article["abstract_text"]
         == "(--)-alpha-Bisabolol has a primary antipeptic action"
     )
-    assert pubmed_articles[0]["mesh_headings"] == [
+    assert article["mesh_headings"] == [
         {
             "major_topic": False,
             "text": "Dose-Response Relationship, Drug",
             "ui": "D004305",
         }
     ]
-    assert pubmed_articles[0]["chemicals"] == [{"text": "Hemoglobins", "ui": "D006454"}]
-    assert pubmed_articles[0]["date_completed"] == "1975-09-01"
-    assert "history" not in pubmed_articles[0]
-    assert "pubmed_article" not in pubmed_articles[0]
+    assert article["chemicals"] == [{"text": "Hemoglobins", "ui": "D006454"}]
+    assert article["date_completed"] == "1975-09-01"
+    assert "history" not in article
+    assert "pubmed_article" not in article
+    assert article["_id"] == article["pmid"] == "1"
 
 
 def test_get_documents_from_pubmed_xmls(mocker):
@@ -46,13 +48,15 @@ def test_get_documents_from_pubmed_xmls(mocker):
 
 
 def test_selectively_flatten_dict():
-    data = OrderedDict({
-        "foo": OrderedDict({"Bar": "baz"}),
-        "qux": [1, 2, 3],
-        "#spam": [OrderedDict({"eggs": OrderedDict({"quux": "corge"})})],
-        "grault": "1",
-        "date": OrderedDict({"Year": "1999", "Month": "03", "Day": "05"}),
-    })
+    data = OrderedDict(
+        {
+            "foo": OrderedDict({"Bar": "baz"}),
+            "qux": [1, 2, 3],
+            "#spam": [OrderedDict({"eggs": OrderedDict({"quux": "corge"})})],
+            "grault": "1",
+            "date": OrderedDict({"Year": "1999", "Month": "03", "Day": "05"}),
+        }
+    )
     result = selectively_flatten_dict(
         data, date_fields=("date",), ignore_keys=("grault",)
     )

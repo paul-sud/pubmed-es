@@ -57,6 +57,7 @@ def articles():
 <PubmedArticleSet>
   <PubmedArticle>
     <MedlineCitation Status="MEDLINE" Owner="NLM">
+      <PMID Version="1">1</PMID>
       <DateCompleted>
         <Year>1975</Year>
         <Month> 09</Month>
