@@ -14,6 +14,7 @@ pip install -r requirements.txt
 ```
 
 ## Usage
+
 From the root of this repo, run the following to read and index the XML, where `DATA_DIR` points to a folder containing the XML files:
 ```bash
 python -m pubmed_es -d $DATA_DIR

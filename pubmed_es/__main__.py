@@ -26,7 +26,10 @@ def main() -> None:
         ec.client.cluster.health()
     except ConnectionError as e:
         raise RuntimeError("Elasticsearch is not running") from e
-    ec.parallel_bulk(get_documents_from_pubmed_xmls(Path(args.data_dir)))
+    ec.client.indices.create("pubmed", ignore=400)
+    ec.parallel_bulk(
+        actions=get_documents_from_pubmed_xmls(Path(args.data_dir)), index="pubmed"
+    )
 
 
 if __name__ == "__main__":

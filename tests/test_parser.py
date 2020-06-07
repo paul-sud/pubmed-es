@@ -1,4 +1,3 @@
-import gzip
 from collections import OrderedDict
 from pathlib import Path
 from unittest.mock import mock_open
@@ -7,71 +6,16 @@ import pytest
 
 from pubmed_es.parser import (
     get_documents_from_pubmed_xml,
+    get_documents_from_pubmed_xmls,
     ordered_dict_to_dict,
     pubmed_date_to_str,
     pythonify_key,
     selectively_flatten_dict,
 )
 
-article = """
-<PubmedArticleSet>
-  <PubmedArticle>
-    <MedlineCitation Status="MEDLINE" Owner="NLM">
-      <DateCompleted>
-        <Year>1975</Year>
-        <Month>09</Month>
-        <Day>01</Day>
-      </DateCompleted>
-      <Article PubModel="Print">
-        <Journal>
-          <Title>Arzneimittel-Forschung</Title>
-        </Journal>
-        <ArticleTitle>[Biochemical studies].</ArticleTitle>
-        <Abstract>
-          <AbstractText>(--)-alpha-Bisabolol has a primary antipeptic action</AbstractText>
-        </Abstract>
-        <AuthorList CompleteYN="Y">
-          <Author ValidYN="Y">
-            <LastName>Isaac</LastName>
-            <ForeName>O</ForeName>
-            <Initials>O</Initials>
-          </Author>
-        </AuthorList>
-        <PublicationTypeList>
-          <PublicationType UI="D004740">English Abstract</PublicationType>
-        </PublicationTypeList>
-      </Article>
-      <ChemicalList>
-        <Chemical>
-          <NameOfSubstance UI="D006454">Hemoglobins</NameOfSubstance>
-        </Chemical>
-      </ChemicalList>
-      <MeshHeadingList>
-        <MeshHeading>
-          <DescriptorName UI="D004305" MajorTopicYN="N">Dose-Response Relationship, Drug</DescriptorName>
-        </MeshHeading>
-      </MeshHeadingList>
-    </MedlineCitation>
-    <PubmedData>
-      <History>
-        <PubMedPubDate PubStatus="pubmed">
-          <Year>1975</Year>
-          <Month>9</Month>
-          <Day>1</Day>
-        </PubMedPubDate>
-      </History>
-      <ArticleIdList>
-        <ArticleId IdType="pubmed">21</ArticleId>
-      </ArticleIdList>
-    </PubmedData>
-  </PubmedArticle>
-</PubmedArticleSet>
-"""
 
-
-def test_get_documents_from_pubmed_xml(mocker):
-    data = gzip.compress(bytes(article, "utf-8"))
-    mocker.patch("builtins.open", mock_open(read_data=data))
+def test_get_documents_from_pubmed_xml(mocker, articles):
+    mocker.patch("builtins.open", mock_open(read_data=articles))
     pubmed_articles = get_documents_from_pubmed_xml(Path("foo"))
     assert len(pubmed_articles) == 1
     assert (
@@ -89,6 +33,17 @@ def test_get_documents_from_pubmed_xml(mocker):
     assert pubmed_articles[0]["date_completed"] == "1975-09-01"
     assert "history" not in pubmed_articles[0]
     assert "pubmed_article" not in pubmed_articles[0]
+
+
+def test_get_documents_from_pubmed_xmls(mocker):
+    mocker.patch("pathlib.Path.glob", return_value=["bar", "baz"])
+    mocker.patch(
+        "pubmed_es.parser.get_documents_from_pubmed_xml",
+        side_effect=[[{"foo": "bar"}], [{"baz": "qux"}]],
+    )
+    pubmed_articles = get_documents_from_pubmed_xmls(Path("foo"))
+    assert next(pubmed_articles) == {"foo": "bar"}
+    assert next(pubmed_articles) == {"baz": "qux"}
 
 
 def test_ordered_dict_to_dict():

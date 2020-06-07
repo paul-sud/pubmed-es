@@ -12,7 +12,7 @@ def get_documents_from_pubmed_xmls(data_dir: Path) -> Iterator[Dict[str, Any]]:
     """
     Implemented as iterator for low memory overhead. Yields individual pubmed documents
     """
-    for document_path in data_dir.glob("*.xml"):
+    for document_path in data_dir.glob("*.xml.gz"):
         for document in get_documents_from_pubmed_xml(document_path):
             yield document
 

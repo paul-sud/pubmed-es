@@ -1,3 +1,4 @@
+import gzip
 import subprocess
 from time import sleep
 
@@ -48,3 +49,62 @@ def terminate_process(process):
         process.wait(timeout=10)
     except subprocess.TimeoutExpired:
         process.kill()
+
+
+@pytest.fixture
+def articles():
+    data = """
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation Status="MEDLINE" Owner="NLM">
+      <DateCompleted>
+        <Year>1975</Year>
+        <Month> 09</Month>
+        <Day>01</Day>
+      </DateCompleted>
+      <Article PubModel="Print">
+        <Journal>
+          <Title>Arzneimittel-Forschung</Title>
+        </Journal>
+        <ArticleTitle>[Biochemical studies].</ArticleTitle>
+        <Abstract>
+          <AbstractText>(--)-alpha-Bisabolol has a primary antipeptic action</AbstractText>
+        </Abstract>
+        <AuthorList CompleteYN="Y">
+          <Author ValidYN="Y">
+            <LastName>Isaac</LastName>
+            <ForeName>O</ForeName>
+            <Initials>O</Initials>
+          </Author>
+        </AuthorList>
+        <PublicationTypeList>
+          <PublicationType UI="D004740">English Abstract</PublicationType>
+        </PublicationTypeList>
+      </Article>
+      <ChemicalList>
+        <Chemical>
+          <NameOfSubstance UI="D006454">Hemoglobins</NameOfSubstance>
+        </Chemical>
+      </ChemicalList>
+      <MeshHeadingList>
+        <MeshHeading>
+          <DescriptorName UI="D004305" MajorTopicYN="N">Dose-Response Relationship, Drug</DescriptorName>
+        </MeshHeading>
+      </MeshHeadingList>
+    </MedlineCitation>
+    <PubmedData>
+      <History>
+        <PubMedPubDate PubStatus="pubmed">
+          <Year>1975</Year>
+          <Month>9</Month>
+          <Day>1</Day>
+        </PubMedPubDate>
+      </History>
+      <ArticleIdList>
+        <ArticleId IdType="pubmed">21</ArticleId>
+      </ArticleIdList>
+    </PubmedData>
+  </PubmedArticle>
+</PubmedArticleSet>
+"""
+    return gzip.compress(bytes(data, "utf-8"))
